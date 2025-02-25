@@ -21,6 +21,9 @@ A cross-platform compatible API service using Hono, built to run on Bun, Deno, o
 # Install dependencies using Bun (recommended)
 bun install
 
+# Or using deno
+deno install
+
 # Or using npm
 npm install
 ```
@@ -36,8 +39,21 @@ bun dev
 bun start
 ```
 
+### Using Deno
+```bash
+# Development mode with hot reload
+deno task dev
+
+# Production mode
+deno task start
+```
+
 ### Using Node.js
 ```bash
+# Development mode with hot reload
+npm run dev:node
+
+# Production mode
 npm run start:node
 ```
 
