@@ -4,8 +4,8 @@
     "dev": "deno run --allow-net --allow-env --watch src/index.ts"
   },
   "imports": {
-    "hono": "npm:hono@3.12.0",
-    "hono/": "npm:hono@3.12.0/"
+    "hono": "npm:hono@4.7.2",
+    "hono/": "npm:hono@4.7.2/"
   },
   "compilerOptions": {
     "lib": ["deno.window"]
