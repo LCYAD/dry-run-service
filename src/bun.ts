@@ -11,4 +11,4 @@ Bun.serve({
   port: Number(port)
 })
 
-console.log(`Bun server is running on port ${port}`) 
+console.log(`Bun server is running on port ${port}`)
