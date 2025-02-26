@@ -1,17 +1,13 @@
 import { Hono } from 'hono'
 import { logger } from 'hono/logger'
+import healthRouter from './routers/health'
 
 const app = new Hono()
 
 // Middleware
 app.use('*', logger())
 
-// Health check endpoint
-app.get('/healthz', (c) => {
-  return c.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString()
-  })
-})
+// Mount routers
+app.route('/', healthRouter)
 
-export default app 
+export default app

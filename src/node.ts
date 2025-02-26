@@ -8,4 +8,4 @@ serve({
   port: Number(port)
 })
 
-console.log(`Node.js server is running on port ${port}`) 
+console.log(`Node.js server is running on port ${port}`)

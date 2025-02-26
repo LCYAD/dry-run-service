@@ -14,4 +14,4 @@ Deno.serve({
   handler: app.fetch
 })
 
-console.log(`Deno server is running on port ${port}`) 
+console.log(`Deno server is running on port ${port}`)
