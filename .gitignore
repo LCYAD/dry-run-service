@@ -67,3 +67,6 @@ deno.lock
 # Misc
 .DS_Store
 Thumbs.db
+
+# Data files
+data/
