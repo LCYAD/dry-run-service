@@ -4,10 +4,10 @@
   "description": "A cross-platform compatible API service using Hono",
   "type": "module",
   "scripts": {
-    "start": "bun src/index.ts",
-    "start:node": "tsx src/index.ts",
-    "dev": "bun --watch src/index.ts",
-    "dev:node": "tsx watch src/index.ts",
+    "start:bun": "bun src/bun.ts",
+    "start:node": "tsx src/node.ts",
+    "dev:bun": "bun --watch src/bun.ts",
+    "dev:node": "tsx watch src/node.ts",
     "build": "tsc"
   },
   "dependencies": {

@@ -5,9 +5,19 @@ A cross-platform compatible API service using Hono, built to run on Bun, Deno, o
 ## Features
 
 - Health check endpoint at `/healthz`
-- Cross-platform compatibility
+- Cross-platform compatibility with runtime-specific optimizations
 - TypeScript support
 - Built with Hono framework
+
+## Project Startup Files Structure
+
+```
+src/
+  ├── app.ts        # Shared Hono application logic
+  ├── bun.ts        # Bun-specific entry point
+  ├── deno.ts       # Deno-specific entry point
+  └── node.ts       # Node.js-specific entry point
+```
 
 ## Prerequisites
 
@@ -21,11 +31,10 @@ A cross-platform compatible API service using Hono, built to run on Bun, Deno, o
 # Install dependencies using Bun (recommended)
 bun install
 
-# Or using deno
-deno install
-
 # Or using npm
 npm install
+
+# Deno doesn't require installation
 ```
 
 ## Running the Service
