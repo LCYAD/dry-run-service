@@ -23,7 +23,8 @@
   "dependencies": {
     "@hono/node-server": "^1.13.8",
     "drizzle-orm": "^0.40.0",
-    "hono": "^4.7.2"
+    "hono": "^4.7.2",
+    "mysql2": "^3.12.0"
   },
   "devDependencies": {
     "@types/eslint": "^9.6.1",
