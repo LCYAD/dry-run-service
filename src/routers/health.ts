@@ -2,11 +2,11 @@ import { Hono } from 'hono'
 
 const router = new Hono()
 
-router.get('/healthz', (c) => {
+router.get('/healthz', c => {
   return c.json({
     status: 'healthy',
     timestamp: new Date().toISOString()
   })
 })
 
-export default router 
+export default router

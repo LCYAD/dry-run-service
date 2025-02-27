@@ -1,5 +1,10 @@
 declare global {
-  var Bun: { serve: Function }
+  var Bun: {
+    serve: (options: {
+      port: number
+      fetch: (request: Request) => Response | Promise<Response>
+    }) => void
+  }
 }
 
 import app from './app'

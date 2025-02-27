@@ -37,9 +37,16 @@ npm install
 # Deno doesn't require installation
 ```
 
+## Start up the database, redis and other services
+
+```bash
+docker compose up -d
+```
+
 ## Running the Service
 
 ### Using Bun (Recommended)
+
 ```bash
 # Development mode with hot reload
 bun dev
@@ -49,6 +56,7 @@ bun start
 ```
 
 ### Using Deno
+
 ```bash
 # Development mode with hot reload
 deno task dev
@@ -58,6 +66,7 @@ deno task start
 ```
 
 ### Using Node.js
+
 ```bash
 # Development mode with hot reload
 npm run dev:node
@@ -69,6 +78,7 @@ npm run start:node
 ## Testing the API
 
 Test the health check endpoint:
+
 ```bash
 curl http://localhost:3000/healthz
 ```
