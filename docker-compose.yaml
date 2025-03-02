@@ -7,16 +7,16 @@ services:
       - '3306:3306'
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
     volumes:
-      - ./data/mysql:/var/lib/mysql
+      - shared_mysql_data:/var/lib/mysql
+      - ./scripts/db:/docker-entrypoint-initdb.d
 
   redis:
     image: redis:7
     ports:
       - '6379:6379'
     volumes:
-      - ./data/redis:/data
+      - shared_redis_data:/data
 
   minio:
     image: minio/minio
@@ -27,5 +27,13 @@ services:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
     volumes:
-      - ./data/minio:/data
+      - shared_minio_data:/data
     command: server /data --console-address ":9001"
+
+volumes:
+  shared_mysql_data:
+    external: true
+  shared_redis_data:
+    external: true
+  shared_minio_data:
+    external: true
