@@ -1,6 +1,6 @@
 # Dry Run Service
 
-A cross-platform compatible API service using Hono, built to run on Bun, Deno, or Node.js.
+A backend API service building on top on the POC done in [dry-run-service-poc](https://github.com/LCYAD/dry-run-service-poc) using Hono, built to run on Bun, Deno, or Node.js.
 
 ## Features
 
