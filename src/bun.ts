@@ -8,8 +8,9 @@ declare global {
 }
 
 import app from './app'
+import { env } from './env'
 
-const port = process.env.PORT ?? 3000
+const port = env.PORT ?? 3000
 
 Bun.serve({
   fetch: app.fetch,
