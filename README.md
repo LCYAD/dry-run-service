@@ -24,6 +24,7 @@ src/
 - [Bun](https://bun.sh/) (recommended)
 - Or [Node.js](https://nodejs.org/) (v18 or later)
 - Or [Deno](https://deno.land/)
+  - please note that you need to install latest version of Deno or it might not work. Tested in v2.2.3
 
 ## Installation
 

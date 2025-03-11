@@ -1,5 +1,5 @@
-import crypto from 'crypto'
 import { customAlphabet } from 'nanoid'
+import crypto from 'node:crypto'
 
 export const generateQueueId = (queueName: string, size = 10): string => {
   // only allow alphanumeric characters
