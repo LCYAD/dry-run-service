@@ -4,8 +4,8 @@ import {
   PutObjectCommand,
   S3Client
 } from '@aws-sdk/client-s3'
-import crypto from 'crypto'
 import { env } from '../env'
+import { decryptAES256, encryptAES256 } from './encryption'
 
 const s3Client = new S3Client({
   endpoint: env.S3_URL,
@@ -22,28 +22,16 @@ export const uploadToS3 = async (
   key: string,
   data: Buffer | string
 ) => {
-  // Generate a symmetric key
-  const secretKey = crypto.randomBytes(32)
-
-  // Convert data to JSON string and encrypt
   const jsonString = JSON.stringify(data)
-  const iv = crypto.randomBytes(16)
-  const cipher = crypto.createCipheriv('aes-256-gcm', secretKey, iv)
 
-  let encryptedData = cipher.update(jsonString, 'utf8')
-  encryptedData = Buffer.concat([encryptedData, cipher.final()])
-  const authTag = cipher.getAuthTag()
-
-  // Combine IV, encrypted data and auth tag
-  const finalBuffer = Buffer.concat([iv, encryptedData, authTag])
-
+  const { encryptedData, secretKey } = encryptAES256(jsonString)
   const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: key,
-    Body: finalBuffer,
+    Body: encryptedData,
     ContentType: 'application/octet-stream',
     Metadata: {
-      'x-amz-meta-key': secretKey.toString('base64')
+      'x-amz-meta-key': secretKey
     }
   })
 
@@ -82,22 +70,7 @@ export const downloadAndDecryptFromS3 = async (
       }
     }
 
-    // Convert the buffer to proper format and extract components
-    const buffer = Buffer.from(encryptedBuffer)
-    const iv = buffer.subarray(0, 16)
-    const authTag = buffer.subarray(buffer.length - 16)
-    const encryptedData = buffer.subarray(16, buffer.length - 16)
-
-    // Decode the secret key from base64
-    const secretKey = Buffer.from(secretKeyBase64, 'base64')
-
-    // Create decipher
-    const decipher = crypto.createDecipheriv('aes-256-gcm', secretKey, iv)
-    decipher.setAuthTag(authTag)
-
-    // Decrypt the data
-    let decryptedData = decipher.update(encryptedData)
-    decryptedData = Buffer.concat([decryptedData, decipher.final()])
+    const decryptedData = decryptAES256(encryptedBuffer, secretKeyBase64)
 
     // Parse the decrypted JSON string
     const jsonData = JSON.parse(decryptedData.toString()) as Record<

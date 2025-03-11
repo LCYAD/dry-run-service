@@ -1,7 +1,7 @@
 {
   "tasks": {
-    "start": "deno run --allow-net --allow-env --allow-read --allow-ffi --unstable-sloppy-imports src/deno.ts",
-    "dev": "deno run --allow-net --allow-env --allow-read --allow-ffi --watch --unstable-sloppy-imports src/deno.ts"
+    "start": "deno run --allow-net --allow-env --allow-read --allow-ffi --unstable-sloppy-imports --allow-sys src/deno.ts",
+    "dev": "deno run --allow-net --allow-env --allow-read --allow-ffi --watch --unstable-sloppy-imports --allow-sys src/deno.ts"
   },
   "imports": {
     "hono": "npm:hono@4.7.2",
@@ -9,5 +9,6 @@
   },
   "compilerOptions": {
     "lib": ["deno.window"]
-  }
+  },
+  "unstable": ["node-globals"]
 }

@@ -24,14 +24,12 @@ new Worker(
   async (job: Job<ErrorHandlingInput, boolean>) => {
     const s3KeyErrorHandling = `${job.data.jobName}/${job.data.failedJobId}.json`
 
-    // TODO: Encrypt the data?
-
-    await uploadToS3(
+    const s3UploadRes = await uploadToS3(
       'failed-job-data',
       s3KeyErrorHandling,
       JSON.stringify(job.data)
     )
-
+    if (!s3UploadRes.success) return false
     await db.insert(failedJobs).values({
       jobId: job.data.failedJobId,
       jobName: job.data.jobName,
