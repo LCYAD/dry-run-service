@@ -7,7 +7,7 @@ const queueMock = vi.hoisted(() => ({
 }))
 
 // Mock the queue
-vi.mock('../../queue/testStringEqual', () => ({
+vi.mock('../../queues/testStringEqual', () => ({
   testStringEqualQueue: queueMock
 }))
 
@@ -21,11 +21,12 @@ describe('Job Router', () => {
     vi.clearAllMocks()
   })
 
-  describe('POST /job/test-string-equal', () => {
-    describe('sucess case', () => {
+  describe('POST /jobs/test-string-equal', () => {
+    const testStringEqualEndpoint = '/jobs/test-string-equal'
+    describe('sucess cases', () => {
       it('should create a job successfully with valid input', async () => {
         const expectedRes = 'test string'
-        const res = await app.request('/job/test-string-equal', {
+        const res = await app.request(testStringEqualEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -55,9 +56,9 @@ describe('Job Router', () => {
       })
     })
 
-    describe('error case', () => {
+    describe('error cases', () => {
       it('should return 400 for missing expectedRes field', async () => {
-        const res = await app.request('/job/test-string-equal', {
+        const res = await app.request(testStringEqualEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -70,7 +71,7 @@ describe('Job Router', () => {
       })
 
       it('should return 400 for wrong expectedRes type', async () => {
-        const res = await app.request('/job/test-string-equal', {
+        const res = await app.request(testStringEqualEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -85,7 +86,7 @@ describe('Job Router', () => {
       })
 
       it('should return 400 for non-JSON content type', async () => {
-        const res = await app.request('/job/test-string-equal', {
+        const res = await app.request('/jobs/test-string-equal', {
           method: 'POST',
           headers: {
             'Content-Type': 'text/plain'

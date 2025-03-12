@@ -1,7 +1,6 @@
 import { Queue, Worker, type Job } from 'bullmq'
-import { db } from '../db/db'
-import { failedJobs } from '../db/schema'
-import { uploadToS3 } from '../util/s3'
+import { createNewFailedJob } from '../db/repositories/failedJob'
+import { uploadToS3 } from '../utils/s3'
 import { connection } from './ioredis'
 
 const queueName = 'error-handling'
@@ -29,8 +28,10 @@ new Worker(
       s3KeyErrorHandling,
       JSON.stringify(job.data)
     )
+
     if (!s3UploadRes.success) return false
-    await db.insert(failedJobs).values({
+
+    await createNewFailedJob({
       jobId: job.data.failedJobId,
       jobName: job.data.jobName,
       s3Key: s3KeyErrorHandling
