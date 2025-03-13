@@ -6,12 +6,24 @@ import failedJobRouter from '../failedJob'
 
 const failedJobsMock = vi.hoisted(() => ({
   getPaginatedFailedJobs: vi.fn(),
-  getFailedJobCount: vi.fn()
+  getFailedJobCount: vi.fn(),
+  getFailedJobById: vi.fn(),
+  deleteFailedJobById: vi.fn()
+}))
+
+const s3Mock = vi.hoisted(() => ({
+  deleteS3Object: vi.fn()
 }))
 
 vi.mock('../../db/repositories/failedJob', () => ({
   getPaginatedFailedJobs: failedJobsMock.getPaginatedFailedJobs,
-  getFailedJobCount: failedJobsMock.getFailedJobCount
+  getFailedJobCount: failedJobsMock.getFailedJobCount,
+  getFailedJobById: failedJobsMock.getFailedJobById,
+  deleteFailedJobById: failedJobsMock.deleteFailedJobById
+}))
+
+vi.mock('../../utils/s3', () => ({
+  deleteS3Object: s3Mock.deleteS3Object
 }))
 
 describe('Failed Jobs Router', () => {
@@ -124,6 +136,105 @@ describe('Failed Jobs Router', () => {
       it('should return 400 for invalid limit parameter', async () => {
         const res = await app.request(`${getFailedJobsEndpoint}?limit=101`)
         expect(res.status).toBe(400)
+      })
+    })
+  })
+
+  describe('DELETE /failed-jobs/:id', () => {
+    const deleteFailedJobEndpoint = '/failed-jobs'
+
+    describe('success cases', () => {
+      it('should delete failed job of provided id successfully', async () => {
+        const jobId = 1
+        const mockFailedJobRes = [
+          {
+            id: 1,
+            jobId: 'abc',
+            jobName: 'test-1',
+            s3Key: 's3key-1',
+            downloadApproved: null,
+            createdAt: now,
+            updatedAt: now
+          }
+        ]
+
+        failedJobsMock.getFailedJobById.mockResolvedValue(mockFailedJobRes)
+        s3Mock.deleteS3Object.mockResolvedValue({ success: true })
+        failedJobsMock.deleteFailedJobById.mockResolvedValue(undefined)
+
+        const res = await app.request(`${deleteFailedJobEndpoint}/${jobId}`, {
+          method: 'DELETE'
+        })
+
+        expect(res.status).toBe(200)
+        const data = await res.json()
+        expect(data).toEqual({
+          message: 'Failed job deleted successfully'
+        })
+
+        expect(failedJobsMock.getFailedJobById).toHaveBeenCalledWith(jobId)
+        expect(s3Mock.deleteS3Object).toHaveBeenCalledWith(
+          'failed-job-data',
+          mockFailedJobRes[0].s3Key
+        )
+        expect(failedJobsMock.deleteFailedJobById).toHaveBeenCalledWith(jobId)
+      })
+    })
+
+    describe('error cases', () => {
+      it('should return 400 invalid failed job id is passed', async () => {
+        const jobId = 'test'
+        failedJobsMock.getFailedJobById.mockResolvedValue([])
+
+        const res = await app.request(`${deleteFailedJobEndpoint}/${jobId}`, {
+          method: 'DELETE'
+        })
+
+        expect(res.status).toBe(400)
+        const data = (await res.json()) as Record<string, unknown>
+        expect(data.success).toEqual(false)
+      })
+      it('should return 404 when failed job not found', async () => {
+        const jobId = 999
+        failedJobsMock.getFailedJobById.mockResolvedValue([])
+
+        const res = await app.request(`${deleteFailedJobEndpoint}/${jobId}`, {
+          method: 'DELETE'
+        })
+
+        expect(res.status).toBe(404)
+        const data = await res.json()
+        expect(data).toEqual({
+          message: 'Failed job not found'
+        })
+      })
+      it('should return 500 when S3 deletion fails', async () => {
+        const jobId = 1
+        const mockJob = [
+          {
+            id: jobId,
+            jobId: 'abc',
+            jobName: 'test-1',
+            s3Key: 's3key-1',
+            downloadApproved: null,
+            createdAt: now,
+            updatedAt: now
+          }
+        ]
+
+        failedJobsMock.getFailedJobById.mockResolvedValue(mockJob)
+        s3Mock.deleteS3Object.mockResolvedValue({ success: false })
+
+        const res = await app.request(`${deleteFailedJobEndpoint}/${jobId}`, {
+          method: 'DELETE'
+        })
+
+        expect(res.status).toBe(500)
+        const data = await res.json()
+        expect(data).toEqual({
+          message: 'Failed to delete S3 object'
+        })
+        expect(failedJobsMock.deleteFailedJobById).not.toHaveBeenCalled()
       })
     })
   })

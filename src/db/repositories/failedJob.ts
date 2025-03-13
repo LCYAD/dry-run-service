@@ -1,4 +1,4 @@
-import { desc, sql, type InferSelectModel } from 'drizzle-orm'
+import { desc, eq, sql, type InferSelectModel } from 'drizzle-orm'
 import { db } from '../db'
 import { failedJobs } from '../schema'
 
@@ -15,6 +15,9 @@ export const getPaginatedFailedJobs = (page: number, limit: number) => {
 export const getFailedJobCount = () =>
   db.select({ count: sql<number>`count(*)` }).from(failedJobs)
 
+export const getFailedJobById = (id: number) =>
+  db.select().from(failedJobs).where(eq(failedJobs.id, id)).limit(1)
+
 export const createNewFailedJob = ({
   jobId,
   jobName,
@@ -25,3 +28,6 @@ export const createNewFailedJob = ({
     jobName,
     s3Key
   })
+
+export const deleteFailedJobById = (id: number) =>
+  db.delete(failedJobs).where(eq(failedJobs.id, id))
