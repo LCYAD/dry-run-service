@@ -8,7 +8,7 @@ import {
   getFailedJobCount,
   getPaginatedFailedJobs
 } from '../db/repositories/failedJob'
-import { deleteS3Object } from '../utils/s3'
+import { deleteS3Object, downloadAndDecryptFromS3 } from '../utils/s3'
 
 const router = new Hono().basePath('/failed-jobs')
 
@@ -17,7 +17,7 @@ const failedJobsGetQueryParamSchema = z.object({
   limit: z.coerce.number().gte(1).lte(100).optional().default(30)
 })
 
-const failedJobsDeleteByIdParamSchema = z.object({
+const failedJobsByIdParamSchema = z.object({
   id: z.coerce.number()
 })
 
@@ -40,30 +40,54 @@ router
       }
     })
   })
-  .delete(
-    '/:id',
-    zValidator('param', failedJobsDeleteByIdParamSchema),
+  .get(
+    '/:id/download',
+    zValidator('param', failedJobsByIdParamSchema),
     async c => {
       const { id } = c.req.valid('param')
 
-      const job = await getFailedJobById(id)
+      const failedJob = await getFailedJobById(id)
 
-      if (job.length === 0) {
-        return c.json({ message: 'Failed job not found' }, 404)
+      if (failedJob.length === 0) {
+        return c.json(
+          { code: 'NOT_FOUND', message: 'Failed job not found' },
+          404
+        )
       }
+      const { success, data } = await downloadAndDecryptFromS3(
+        'failed-job-data',
+        failedJob[0].s3Key
+      )
 
-      // Delete S3 object first
-      const s3Result = await deleteS3Object('failed-job-data', job[0].s3Key)
-
-      if (!s3Result.success) {
-        return c.json({ message: 'Failed to delete S3 object' }, 500)
+      if (!success) {
+        return c.json(
+          { code: 'DOWNLOAD_FAILED', message: 'Failed to download file' },
+          500
+        )
       }
-
-      // Delete from database
-      await deleteFailedJobById(id)
-
-      return c.json({ message: 'Failed job deleted successfully' }, 200)
+      return c.json({ message: 'successfully download data', data }, 200)
     }
   )
+  .delete('/:id', zValidator('param', failedJobsByIdParamSchema), async c => {
+    const { id } = c.req.valid('param')
+
+    const failedJob = await getFailedJobById(id)
+
+    if (failedJob.length === 0) {
+      return c.json({ code: 'NOT_FOUND', message: 'Failed job not found' }, 404)
+    }
+
+    // Delete S3 object first
+    const s3Result = await deleteS3Object('failed-job-data', failedJob[0].s3Key)
+
+    if (!s3Result.success) {
+      return c.json({ message: 'Failed to delete S3 object' }, 500)
+    }
+
+    // Delete from database
+    await deleteFailedJobById(id)
+
+    return c.json({ message: 'Failed job deleted successfully' }, 200)
+  })
 
 export default router

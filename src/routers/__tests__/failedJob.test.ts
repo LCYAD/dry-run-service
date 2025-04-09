@@ -12,7 +12,8 @@ const failedJobsMock = vi.hoisted(() => ({
 }))
 
 const s3Mock = vi.hoisted(() => ({
-  deleteS3Object: vi.fn()
+  deleteS3Object: vi.fn(),
+  downloadAndDecryptFromS3: vi.fn()
 }))
 
 vi.mock('../../db/repositories/failedJob', () => ({
@@ -23,12 +24,15 @@ vi.mock('../../db/repositories/failedJob', () => ({
 }))
 
 vi.mock('../../utils/s3', () => ({
-  deleteS3Object: s3Mock.deleteS3Object
+  deleteS3Object: s3Mock.deleteS3Object,
+  downloadAndDecryptFromS3: s3Mock.downloadAndDecryptFromS3
 }))
 
 describe('Failed Jobs Router', () => {
   let app: Hono
   const now = new Date()
+
+  const failedJobsPath = '/failed-jobs'
 
   beforeEach(() => {
     app = new Hono()
@@ -38,7 +42,6 @@ describe('Failed Jobs Router', () => {
   })
 
   describe('GET /failed-jobs', () => {
-    const getFailedJobsEndpoint = '/failed-jobs'
     describe('success cases', () => {
       it('should return paginated failed jobs with default parameters of currentPage = 1 and itemsPerPage = 30', async () => {
         const mockDBResponse: InferSelectModel<typeof failedJobs>[] = [
@@ -66,7 +69,7 @@ describe('Failed Jobs Router', () => {
           { count: mockDBResponse.length }
         ])
 
-        const res = await app.request(getFailedJobsEndpoint)
+        const res = await app.request(failedJobsPath)
 
         expect(res.status).toBe(200)
         const data = await res.json()
@@ -95,9 +98,7 @@ describe('Failed Jobs Router', () => {
         failedJobsMock.getPaginatedFailedJobs.mockResolvedValue([])
         failedJobsMock.getFailedJobCount.mockResolvedValue([{ count: 100 }])
 
-        const res = await app.request(
-          `${getFailedJobsEndpoint}?page=2&limit=10`
-        )
+        const res = await app.request(`${failedJobsPath}?page=2&limit=10`)
 
         expect(res.status).toBe(200)
         const { pagination } = (await res.json()) as Record<string, number>
@@ -112,7 +113,7 @@ describe('Failed Jobs Router', () => {
         failedJobsMock.getPaginatedFailedJobs.mockResolvedValue([])
         failedJobsMock.getFailedJobCount.mockResolvedValue([{ count: 0 }])
 
-        const res = await app.request(getFailedJobsEndpoint)
+        const res = await app.request(failedJobsPath)
 
         expect(res.status).toBe(200)
         const data = await res.json()
@@ -129,20 +130,116 @@ describe('Failed Jobs Router', () => {
     })
     describe('error cases', () => {
       it('should return 400 for invalid page parameter', async () => {
-        const res = await app.request(`${getFailedJobsEndpoint}?page=0`)
+        const res = await app.request(`${failedJobsPath}?page=0`)
         expect(res.status).toBe(400)
       })
 
       it('should return 400 for invalid limit parameter', async () => {
-        const res = await app.request(`${getFailedJobsEndpoint}?limit=101`)
+        const res = await app.request(`${failedJobsPath}?limit=101`)
+        expect(res.status).toBe(400)
+      })
+    })
+  })
+
+  describe('GET /failed-jobs/:id/download', () => {
+    describe('success cases', () => {
+      it('should download and decrypt data from S3 successfully', async () => {
+        const jobId = 1
+        const mockFailedJobRes = [
+          {
+            id: 1,
+            jobId: 'abc',
+            jobName: 'test-1',
+            s3Key: 's3key-1',
+            downloadApproved: null,
+            createdAt: now,
+            updatedAt: now
+          }
+        ]
+        const mockS3Data = {
+          expectedRes: 'test string',
+          actualRes: 'test1',
+          failedJobId: 'test-string-equal-1',
+          jobName: 'test-string-equal'
+        }
+
+        failedJobsMock.getFailedJobById.mockResolvedValue(mockFailedJobRes)
+        s3Mock.downloadAndDecryptFromS3.mockResolvedValue({
+          success: true,
+          data: mockS3Data
+        })
+
+        const res = await app.request(`${failedJobsPath}/${jobId}/download`)
+
+        expect(res.status).toBe(200)
+        const data = await res.json()
+        expect(data).toEqual({
+          message: 'successfully download data',
+          data: mockS3Data
+        })
+
+        expect(failedJobsMock.getFailedJobById).toHaveBeenCalledWith(jobId)
+        expect(s3Mock.downloadAndDecryptFromS3).toHaveBeenCalledWith(
+          'failed-job-data',
+          mockFailedJobRes[0].s3Key
+        )
+      })
+    })
+
+    describe('error cases', () => {
+      it('should return 404 when failed job not found', async () => {
+        const jobId = 999
+        failedJobsMock.getFailedJobById.mockResolvedValue([])
+
+        const res = await app.request(`${failedJobsPath}/${jobId}/download`)
+
+        expect(res.status).toBe(404)
+        const data = await res.json()
+        expect(data).toEqual({
+          code: 'NOT_FOUND',
+          message: 'Failed job not found'
+        })
+        expect(s3Mock.downloadAndDecryptFromS3).not.toHaveBeenCalled()
+      })
+
+      it('should return 500 when S3 download fails', async () => {
+        const jobId = 1
+        const mockJob = [
+          {
+            id: jobId,
+            jobId: 'abc',
+            jobName: 'test-1',
+            s3Key: 's3key-1',
+            downloadApproved: null,
+            createdAt: now,
+            updatedAt: now
+          }
+        ]
+
+        failedJobsMock.getFailedJobById.mockResolvedValue(mockJob)
+        s3Mock.downloadAndDecryptFromS3.mockResolvedValue({
+          success: false,
+          error: 'S3 download error'
+        })
+
+        const res = await app.request(`${failedJobsPath}/${jobId}/download`)
+
+        expect(res.status).toBe(500)
+        const data = await res.json()
+        expect(data).toEqual({
+          code: 'DOWNLOAD_FAILED',
+          message: 'Failed to download file'
+        })
+      })
+
+      it('should return 400 for invalid job ID parameter', async () => {
+        const res = await app.request(`${failedJobsPath}/invalid/download`)
         expect(res.status).toBe(400)
       })
     })
   })
 
   describe('DELETE /failed-jobs/:id', () => {
-    const deleteFailedJobEndpoint = '/failed-jobs'
-
     describe('success cases', () => {
       it('should delete failed job of provided id successfully', async () => {
         const jobId = 1
@@ -162,7 +259,7 @@ describe('Failed Jobs Router', () => {
         s3Mock.deleteS3Object.mockResolvedValue({ success: true })
         failedJobsMock.deleteFailedJobById.mockResolvedValue(undefined)
 
-        const res = await app.request(`${deleteFailedJobEndpoint}/${jobId}`, {
+        const res = await app.request(`${failedJobsPath}/${jobId}`, {
           method: 'DELETE'
         })
 
@@ -186,7 +283,7 @@ describe('Failed Jobs Router', () => {
         const jobId = 'test'
         failedJobsMock.getFailedJobById.mockResolvedValue([])
 
-        const res = await app.request(`${deleteFailedJobEndpoint}/${jobId}`, {
+        const res = await app.request(`${failedJobsPath}/${jobId}`, {
           method: 'DELETE'
         })
 
@@ -198,13 +295,14 @@ describe('Failed Jobs Router', () => {
         const jobId = 999
         failedJobsMock.getFailedJobById.mockResolvedValue([])
 
-        const res = await app.request(`${deleteFailedJobEndpoint}/${jobId}`, {
+        const res = await app.request(`${failedJobsPath}/${jobId}`, {
           method: 'DELETE'
         })
 
         expect(res.status).toBe(404)
         const data = await res.json()
         expect(data).toEqual({
+          code: 'NOT_FOUND',
           message: 'Failed job not found'
         })
       })
@@ -225,7 +323,7 @@ describe('Failed Jobs Router', () => {
         failedJobsMock.getFailedJobById.mockResolvedValue(mockJob)
         s3Mock.deleteS3Object.mockResolvedValue({ success: false })
 
-        const res = await app.request(`${deleteFailedJobEndpoint}/${jobId}`, {
+        const res = await app.request(`${failedJobsPath}/${jobId}`, {
           method: 'DELETE'
         })
 
