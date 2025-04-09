@@ -52,7 +52,11 @@ export const uploadToS3 = async (
 export const downloadAndDecryptFromS3 = async (
   bucketName: string,
   key: string
-) => {
+): Promise<{
+  success: boolean
+  data?: Record<string, unknown>
+  error?: string
+}> => {
   const command = new GetObjectCommand({
     Bucket: bucketName,
     Key: key
@@ -72,11 +76,10 @@ export const downloadAndDecryptFromS3 = async (
 
     const decryptedData = decryptAES256(encryptedBuffer, secretKeyBase64)
 
-    // Parse the decrypted JSON string
-    const jsonData = JSON.parse(decryptedData.toString()) as Record<
-      string,
-      unknown
-    >
+    // Parse the decrypted JSON string, need to double parse here
+    const jsonData = JSON.parse(
+      JSON.parse(decryptedData.toString()) as string
+    ) as Record<string, unknown>
 
     return {
       success: true,
