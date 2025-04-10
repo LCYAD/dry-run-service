@@ -22,9 +22,9 @@ export const uploadToS3 = async (
   key: string,
   data: Buffer | string
 ) => {
-  const jsonString = JSON.stringify(data)
+  const dataString = typeof data === 'string' ? data : data.toString()
 
-  const { encryptedData, secretKey } = encryptAES256(jsonString)
+  const { encryptedData, secretKey } = encryptAES256(dataString)
   const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: key,
@@ -76,10 +76,11 @@ export const downloadAndDecryptFromS3 = async (
 
     const decryptedData = decryptAES256(encryptedBuffer, secretKeyBase64)
 
-    // Parse the decrypted JSON string, need to double parse here
-    const jsonData = JSON.parse(
-      JSON.parse(decryptedData.toString()) as string
-    ) as Record<string, unknown>
+    // Parse the decrypted JSON string
+    const jsonData = JSON.parse(decryptedData.toString()) as Record<
+      string,
+      unknown
+    >
 
     return {
       success: true,
