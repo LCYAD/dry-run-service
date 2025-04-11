@@ -25,6 +25,7 @@ export const uploadToS3 = async (
   const dataString = typeof data === 'string' ? data : data.toString()
 
   const { encryptedData, secretKey } = encryptAES256(dataString)
+
   const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: key,
