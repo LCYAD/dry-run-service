@@ -18,7 +18,8 @@ router.post(
     const body = c.req.valid('json')
     await testStringEqualQueue.add(
       generateQueueId(QUEUE_NAMES.TEST_STRING_EQUAL),
-      body
+      body,
+      { removeOnComplete: 10, removeOnFail: 50 }
     )
     return c.json(
       {

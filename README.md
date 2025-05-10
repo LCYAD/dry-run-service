@@ -50,10 +50,10 @@ docker compose up -d
 
 ```bash
 # Development mode with hot reload
-bun dev
+bun dev:bun
 
 # Production mode
-bun start
+bun start:bun
 ```
 
 ### Using Deno
@@ -87,3 +87,7 @@ curl http://localhost:3000/healthz
 ## Environment Variables
 
 - `PORT`: Server port (default: 3000)
+
+## Things to note
+
+- for `Deno`, remember to switch the commented line for importing `BullMQAdapter` in [`app.ts`](./src/app.ts) or else your app won't run
