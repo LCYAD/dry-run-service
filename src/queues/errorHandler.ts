@@ -1,7 +1,11 @@
-import { Queue, Worker, type Job } from 'bullmq'
-import { createNewFailedJob } from '../db/repositories/failedJob'
-import { uploadToS3 } from '../utils/s3'
+import { Queue, Worker } from 'bullmq'
+import path, { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { connection } from './ioredis'
+import errorHandlerProcessor from './processors/errorHandlerProcessor'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 const queueName = 'error-handling'
 
@@ -9,35 +13,23 @@ export const errorHandlingQueue = new Queue(queueName, {
   connection
 })
 
-type ErrorHandlingInput = {
-  failedJobId: string
-  input?: unknown
-  expectedRes: string | Record<string, unknown>
-  actualRes: string | Record<string, unknown>
-  jobName: string
+if (typeof Deno !== 'undefined') {
+  // Deno environment: Use Worker with function directly
+  new Worker(queueName, errorHandlerProcessor, {
+    connection,
+    concurrency: 5
+  })
+} else {
+  // Node.js environment: Use sandboxed processor
+
+  const isTsEnvironment = __filename.endsWith('.ts')
+  const processorFile = path.join(
+    __dirname,
+    'processors',
+    `errorHandlerProcessor.${isTsEnvironment ? 'ts' : 'js'}`
+  )
+  new Worker(queueName, processorFile, {
+    connection,
+    concurrency: 5
+  })
 }
-
-// directly setting up the worker inside the queue
-new Worker(
-  queueName,
-  async (job: Job<ErrorHandlingInput, boolean>) => {
-    const s3KeyErrorHandling = `${job.data.jobName}/${job.data.failedJobId}.json`
-
-    const s3UploadRes = await uploadToS3(
-      'failed-job-data',
-      s3KeyErrorHandling,
-      JSON.stringify(job.data)
-    )
-
-    if (!s3UploadRes.success) return false
-
-    await createNewFailedJob({
-      jobId: job.data.failedJobId,
-      jobName: job.data.jobName,
-      s3Key: s3KeyErrorHandling
-    })
-
-    return true
-  },
-  { connection }
-)

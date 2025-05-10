@@ -91,3 +91,4 @@ curl http://localhost:3000/healthz
 ## Things to note
 
 - for `Deno`, remember to switch the commented line for importing `BullMQAdapter` in [`app.ts`](./src/app.ts) or else your app won't run
+- for `Deno`, the import of other modules does not work inside the sandbox processors file so cannot utlize sandbox processor feature
