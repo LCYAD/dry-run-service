@@ -1,29 +1,33 @@
-import { Queue, Worker, type Job } from 'bullmq'
-import { type StringEqualQueueInput } from '../routers/job'
+import { Queue, Worker } from 'bullmq'
+import path, { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { QUEUE_NAMES } from './constant'
-import { errorHandlingQueue } from './errorHandler'
 import { connection } from './ioredis'
+import testStringEqualProcessor from './processors/testStringEqual'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 export const testStringEqualQueue = new Queue(QUEUE_NAMES.TEST_STRING_EQUAL, {
   connection
 })
 
-// directly setting up the worker inside the queue
-// TODO: separate the worker from the queue
-new Worker(
-  QUEUE_NAMES.TEST_STRING_EQUAL,
-  async (job: Job<StringEqualQueueInput, boolean>) => {
-    // TODO: find an actual endpoint to call
-    const expectedRes = job.data.expectedRes
-    if (expectedRes !== 'test1') {
-      await errorHandlingQueue.add(`error-${job.name}`, {
-        ...job.data,
-        actualRes: 'test1',
-        failedJobId: job.name,
-        jobName: QUEUE_NAMES.TEST_STRING_EQUAL
-      })
-    }
-    return true
-  },
-  { connection }
-)
+if (typeof Deno !== 'undefined') {
+  // Deno environment: Use Worker with function directly
+  new Worker(QUEUE_NAMES.TEST_STRING_EQUAL, testStringEqualProcessor, {
+    connection,
+    concurrency: 5
+  })
+} else {
+  // Node.js environment: Use sandboxed processor
+  const isTsEnvironment = __filename.endsWith('.ts')
+  const processorFile = path.join(
+    __dirname,
+    'processors',
+    `testStringEqual.${isTsEnvironment ? 'ts' : 'js'}`
+  )
+  new Worker(QUEUE_NAMES.TEST_STRING_EQUAL, processorFile, {
+    connection,
+    concurrency: 5
+  })
+}
