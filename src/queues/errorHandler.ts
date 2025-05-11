@@ -2,7 +2,7 @@ import { Queue, Worker } from 'bullmq'
 import path, { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { connection } from './ioredis'
-import errorHandlerProcessor from './processors/errorHandlerProcessor'
+import errorHandlerProcessor from './processors/errorHandler'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -21,12 +21,11 @@ if (typeof Deno !== 'undefined') {
   })
 } else {
   // Node.js environment: Use sandboxed processor
-
   const isTsEnvironment = __filename.endsWith('.ts')
   const processorFile = path.join(
     __dirname,
     'processors',
-    `errorHandlerProcessor.${isTsEnvironment ? 'ts' : 'js'}`
+    `errorHandler.${isTsEnvironment ? 'ts' : 'js'}`
   )
   new Worker(queueName, processorFile, {
     connection,

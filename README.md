@@ -92,3 +92,14 @@ curl http://localhost:3000/healthz
 
 - for `Deno`, remember to switch the commented line for importing `BullMQAdapter` in [`app.ts`](./src/app.ts) or else your app won't run
 - for `Deno`, the import of other modules does not work inside the sandbox processors file so cannot utlize sandbox processor feature
+- Bull board seems not be able to capture the proper state of jobs when adding concurrency options, more to be investgated.
+- In `NodeJS` using the BullMQ's sandbox processors in the current way will result in the process not being able to kill itself after job's completion, creating unnecessary consumption of resources. Possible solution to explore:
+  1. Test out solution proposed in this [post by adding process exit after job completion](https://www.alexanderlolis.com/riding-the-bull#removing-an-active-job-in-sandboxed-environments)
+  2. Test out Worker Thread option
+  3. create separate startup script for worker and launching them with separate resources
+  4. implement the `worker.close()` function as stated [here](https://docs.bullmq.io/guide/workers/graceful-shutdown)
+  - the above can be confirmed by using
+
+```bash
+ps -o pid,ppid,command | grep bullmq
+```
