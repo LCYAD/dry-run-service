@@ -84,6 +84,26 @@ Test the health check endpoint:
 curl http://localhost:3000/healthz
 ```
 
+### K6 Test
+
+- Health Test
+
+```bash
+k6 run k6/healthz.test.js
+```
+
+- Json Test
+
+```bash
+k6 run k6/jobsJson.test.js
+```
+
+- Heavy Test
+
+```bash
+k6 run -e DUPLICATION_FACTOR={num of json in array} k6/heavy.test.js
+```
+
 ## Environment Variables
 
 - `PORT`: Server port (default: 3000)
