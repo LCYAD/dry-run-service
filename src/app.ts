@@ -8,6 +8,7 @@ import { logger } from 'hono/logger'
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter'
 
 import { HonoAdapter } from '@bull-board/hono'
+import { testHeavyQueue } from './queues/testHeavy'
 import { testJsonEqualQueue } from './queues/testJsonEqual'
 import { testStringEqualQueue } from './queues/testStringEqual'
 import dashboardRouter from './routers/dashboard'
@@ -20,7 +21,8 @@ const serverAdapter = new HonoAdapter(serveStatic)
 createBullBoard({
   queues: [
     new BullMQAdapter(testStringEqualQueue),
-    new BullMQAdapter(testJsonEqualQueue)
+    new BullMQAdapter(testJsonEqualQueue),
+    new BullMQAdapter(testHeavyQueue)
   ],
   serverAdapter
 })

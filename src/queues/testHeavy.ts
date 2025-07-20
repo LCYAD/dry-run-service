@@ -8,13 +8,13 @@ import testingJsonEqualProcessor from './processors/testNoAction'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-export const testJsonEqualQueue = new Queue(QUEUE_NAMES.TEST_JSON_EQUAL, {
+export const testHeavyQueue = new Queue(QUEUE_NAMES.TEST_HEAVY, {
   connection
 })
 
 if (typeof Deno !== 'undefined') {
   // Deno environment: Use Worker with function directly
-  new Worker(QUEUE_NAMES.TEST_JSON_EQUAL, testingJsonEqualProcessor, {
+  new Worker(QUEUE_NAMES.TEST_HEAVY, testingJsonEqualProcessor, {
     connection,
     concurrency: 5
   })
@@ -26,7 +26,7 @@ if (typeof Deno !== 'undefined') {
     'processors',
     `testNoAction.${isTsEnvironment ? 'ts' : 'js'}`
   )
-  new Worker(QUEUE_NAMES.TEST_JSON_EQUAL, processorFile, {
+  new Worker(QUEUE_NAMES.TEST_HEAVY, processorFile, {
     connection,
     concurrency: 5
   })
